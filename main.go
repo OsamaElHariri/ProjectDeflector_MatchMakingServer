@@ -13,6 +13,26 @@ func main() {
 
 	playersAwaitingMatch := make([]string, 0)
 
+	app.Post("/solo", func(c *fiber.Ctx) error {
+		payload := struct {
+			PlayerId string `json:"playerId"`
+		}{}
+		if err := c.BodyParser(&payload); err != nil {
+			return c.SendStatus(400)
+		}
+
+		gameId, err := game_board.StartGame([]string{payload.PlayerId, "system"})
+		if err != nil {
+			return c.SendStatus(400)
+		}
+		broadcast.SocketBroadcast([]string{payload.PlayerId}, "match_found", map[string]interface{}{
+			"id": gameId,
+		})
+		result := fiber.Map{
+			"status": "ok",
+		}
+		return c.JSON(result)
+	})
 	app.Post("/find", func(c *fiber.Ctx) error {
 		payload := struct {
 			PlayerId string `json:"playerId"`
