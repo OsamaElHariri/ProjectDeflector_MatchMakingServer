@@ -2,8 +2,10 @@ package main
 
 import (
 	"log"
-	"projectdeflector/matchmaking/broadcast"
-	"projectdeflector/matchmaking/game_board"
+	"math/rand"
+	"projectdeflector/matchmaking/game_lobby"
+	"projectdeflector/matchmaking/repositories"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -11,7 +13,22 @@ import (
 func main() {
 	app := fiber.New()
 
-	playersAwaitingMatch := make([]string, 0)
+	rand.Seed(time.Now().Unix())
+
+	repoFactory := repositories.GetRepositoryFactory()
+	game_lobby.UseCase{}.MatchPeriodically(repoFactory)
+
+	app.Use("/", func(c *fiber.Ctx) error {
+		repo, cleanup, err := repoFactory.GetRepository()
+		if err != nil {
+			return c.SendStatus(400)
+		}
+
+		defer cleanup()
+		c.Locals("repo", repo)
+
+		return c.Next()
+	})
 
 	app.Post("/solo", func(c *fiber.Ctx) error {
 		payload := struct {
@@ -21,17 +38,19 @@ func main() {
 			return c.SendStatus(400)
 		}
 
-		gameId, err := game_board.StartGame([]string{payload.PlayerId, "system"})
+		repo := c.Locals("repo").(repositories.Repository)
+		useCase := game_lobby.UseCase{
+			Repo: repo,
+		}
+
+		err := useCase.FindSoloGame(payload.PlayerId)
 		if err != nil {
 			return c.SendStatus(400)
 		}
-		broadcast.SocketBroadcast([]string{payload.PlayerId}, "match_found", map[string]interface{}{
-			"id": gameId,
-		})
-		result := fiber.Map{
+
+		return c.JSON(fiber.Map{
 			"status": "ok",
-		}
-		return c.JSON(result)
+		})
 	})
 	app.Post("/find", func(c *fiber.Ctx) error {
 		payload := struct {
@@ -41,22 +60,19 @@ func main() {
 			return c.SendStatus(400)
 		}
 
-		playersAwaitingMatch = append(playersAwaitingMatch, payload.PlayerId)
+		repo := c.Locals("repo").(repositories.Repository)
+		useCase := game_lobby.UseCase{
+			Repo: repo,
+		}
 
-		if len(playersAwaitingMatch) == 2 {
-			gameId, err := game_board.StartGame(playersAwaitingMatch)
-			if err != nil {
-				return c.SendStatus(400)
-			}
-			broadcast.SocketBroadcast(playersAwaitingMatch, "match_found", map[string]interface{}{
-				"id": gameId,
-			})
-			playersAwaitingMatch = make([]string, 0)
+		err := useCase.QueuePlayer(payload.PlayerId)
+		if err != nil {
+			return c.SendStatus(400)
 		}
-		result := fiber.Map{
+
+		return c.JSON(fiber.Map{
 			"status": "ok",
-		}
-		return c.JSON(result)
+		})
 	})
 
 	log.Fatal(app.Listen(":3004"))

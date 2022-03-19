@@ -1,4 +1,4 @@
-package game_board
+package game_lobby
 
 import (
 	"bytes"
