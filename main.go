@@ -30,20 +30,22 @@ func main() {
 		return c.Next()
 	})
 
-	app.Post("/solo", func(c *fiber.Ctx) error {
-		payload := struct {
-			PlayerId string `json:"playerId"`
-		}{}
-		if err := c.BodyParser(&payload); err != nil {
-			return c.SendStatus(400)
+	app.Use("/", func(c *fiber.Ctx) error {
+		userId := c.Get("x-user-id")
+		if userId != "" {
+			c.Locals("userId", userId)
 		}
+		return c.Next()
+	})
 
+	app.Post("/solo", func(c *fiber.Ctx) error {
+		playerId := c.Locals("userId").(string)
 		repo := c.Locals("repo").(repositories.Repository)
 		useCase := game_lobby.UseCase{
 			Repo: repo,
 		}
 
-		err := useCase.FindSoloGame(payload.PlayerId)
+		err := useCase.FindSoloGame(playerId)
 		if err != nil {
 			return c.SendStatus(400)
 		}
@@ -53,19 +55,14 @@ func main() {
 		})
 	})
 	app.Post("/find", func(c *fiber.Ctx) error {
-		payload := struct {
-			PlayerId string `json:"playerId"`
-		}{}
-		if err := c.BodyParser(&payload); err != nil {
-			return c.SendStatus(400)
-		}
+		playerId := c.Locals("userId").(string)
 
 		repo := c.Locals("repo").(repositories.Repository)
 		useCase := game_lobby.UseCase{
 			Repo: repo,
 		}
 
-		err := useCase.QueuePlayer(payload.PlayerId)
+		err := useCase.QueuePlayer(playerId)
 		if err != nil {
 			return c.SendStatus(400)
 		}
