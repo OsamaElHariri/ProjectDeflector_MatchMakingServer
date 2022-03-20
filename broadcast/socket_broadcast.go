@@ -23,6 +23,21 @@ func SocketBroadcast(ids []string, event string, payload map[string]interface{})
 }
 
 func socketBroadcast(id string, payload []byte) {
-	resp, _ := http.Post("http://127.0.0.1:8080/realtime/notify/"+id, "application/json", bytes.NewBuffer(payload))
-	resp.Body.Close()
+	resp, err := SendPost("http://127.0.0.1:8080/realtime/internal/notify/"+id, payload)
+	if err != nil {
+		resp.Body.Close()
+	}
+}
+
+func SendPost(url string, payload []byte) (*http.Response, error) {
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header = http.Header{
+		"Content-Type":  []string{"application/json"},
+		"Authorization": []string{"Bearer SecretInternalToken!"},
+	}
+	return http.DefaultClient.Do(req)
 }

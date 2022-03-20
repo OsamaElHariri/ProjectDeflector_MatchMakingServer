@@ -1,10 +1,9 @@
 package game_lobby
 
 import (
-	"bytes"
 	"encoding/json"
 	"io/ioutil"
-	"net/http"
+	"projectdeflector/matchmaking/broadcast"
 )
 
 func StartGame(playerIds []string) (string, error) {
@@ -16,7 +15,8 @@ func StartGame(playerIds []string) (string, error) {
 		return "", err
 	}
 
-	resp, _ := http.Post("http://127.0.0.1:8080/game/game", "application/json", bytes.NewBuffer(res))
+	resp, err := broadcast.SendPost("http://127.0.0.1:8080/game/internal/game", res)
+
 	if err != nil {
 		return "", err
 	}
