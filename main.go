@@ -8,10 +8,12 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 )
 
 func main() {
 	app := fiber.New()
+	app.Use(recover.New())
 
 	rand.Seed(time.Now().Unix())
 
