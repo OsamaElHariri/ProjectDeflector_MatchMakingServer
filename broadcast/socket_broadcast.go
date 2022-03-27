@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"os"
 )
 
 func SocketBroadcast(ids []string, event string, payload map[string]interface{}) error {
@@ -23,7 +24,7 @@ func SocketBroadcast(ids []string, event string, payload map[string]interface{})
 }
 
 func socketBroadcast(id string, payload []byte) {
-	resp, err := SendPost("http://127.0.0.1:8080/realtime/internal/notify/"+id, payload)
+	resp, err := SendPost(os.Getenv("INTERNAL_SERVICES_URL")+"/realtime/internal/notify/"+id, payload)
 	if err != nil {
 		resp.Body.Close()
 	}
@@ -37,7 +38,7 @@ func SendPost(url string, payload []byte) (*http.Response, error) {
 
 	req.Header = http.Header{
 		"Content-Type":  []string{"application/json"},
-		"Authorization": []string{"Bearer SecretInternalToken!"},
+		"Authorization": []string{"Bearer " + os.Getenv("INTERNAL_TOKEN")},
 	}
 	return http.DefaultClient.Do(req)
 }

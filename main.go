@@ -3,15 +3,26 @@ package main
 import (
 	"log"
 	"math/rand"
+	"os"
 	"projectdeflector/matchmaking/game_lobby"
 	"projectdeflector/matchmaking/repositories"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	env := os.Getenv("ENV")
+	if env == "" {
+		env = "local"
+	}
+	err := godotenv.Load("env/." + env + ".env")
+	if err != nil {
+		log.Fatalf("could not load env vars")
+	}
+
 	app := fiber.New()
 	app.Use(recover.New())
 
