@@ -67,6 +67,7 @@ func main() {
 			"status": "ok",
 		})
 	})
+
 	app.Post("/find", func(c *fiber.Ctx) error {
 		playerId := c.Locals("userId").(string)
 
@@ -76,6 +77,24 @@ func main() {
 		}
 
 		err := useCase.QueuePlayer(playerId)
+		if err != nil {
+			return c.SendStatus(400)
+		}
+
+		return c.JSON(fiber.Map{
+			"status": "ok",
+		})
+	})
+
+	app.Post("/cancel", func(c *fiber.Ctx) error {
+		playerId := c.Locals("userId").(string)
+
+		repo := c.Locals("repo").(repositories.Repository)
+		useCase := game_lobby.UseCase{
+			Repo: repo,
+		}
+
+		err := useCase.UnqueuePlayer(playerId)
 		if err != nil {
 			return c.SendStatus(400)
 		}

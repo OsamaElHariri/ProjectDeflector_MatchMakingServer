@@ -2,11 +2,13 @@ package repositories
 
 import (
 	"context"
+	"errors"
 	"math/rand"
 	"strconv"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type MongoRepository struct {
@@ -20,10 +22,40 @@ type MatchMakingPlayer struct {
 }
 
 func (repo MongoRepository) QueuePlayer(playerId string) error {
-	player := MatchMakingPlayer{
-		PlayerId: playerId,
+
+	filter := bson.D{
+		{Key: "player_id", Value: playerId},
+		{Key: "match_making_group", Value: ""},
 	}
-	_, err := repo.client.Database("match_management").Collection("players").InsertOne(repo.ctx, player)
+
+	update := bson.D{
+		{Key: "$set", Value: filter},
+	}
+
+	t := true
+	opt := options.UpdateOptions{
+		Upsert: &t,
+	}
+	_, err := repo.client.Database("match_management").Collection("players").UpdateOne(repo.ctx, filter, update, &opt)
+
+	return err
+}
+
+func (repo MongoRepository) UnqueuePlayer(playerId string) error {
+
+	filter := bson.D{
+		{Key: "player_id", Value: playerId},
+		{Key: "match_making_group", Value: ""},
+	}
+	res, err := repo.client.Database("match_management").Collection("players").DeleteOne(repo.ctx, filter)
+	if err != nil {
+		return err
+	}
+
+	if res.DeletedCount == 0 {
+		return errors.New("cannot remove from queue")
+	}
+
 	return err
 }
 

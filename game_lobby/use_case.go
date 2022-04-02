@@ -73,6 +73,11 @@ func (useCase UseCase) QueuePlayer(playerId string) error {
 	return err
 }
 
+func (useCase UseCase) UnqueuePlayer(playerId string) error {
+	err := useCase.Repo.UnqueuePlayer(playerId)
+	return err
+}
+
 func broadcastSuccess(playerIds []string, gameId string) {
 	broadcast.SocketBroadcast(playerIds, "match_found", map[string]interface{}{
 		"id": gameId,

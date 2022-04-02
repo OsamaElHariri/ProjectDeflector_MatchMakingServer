@@ -6,6 +6,7 @@ type RepositoryFactory interface {
 
 type Repository interface {
 	QueuePlayer(playerId string) error
+	UnqueuePlayer(playerId string) error
 	GetMatchMakingGroup(matchMakingGroup string) ([]MatchMakingPlayer, error)
 	SetRandomMatchMakingGroup() (string, error)
 	DeleteMatchMakingGroup(matchMakingGroup string) error
