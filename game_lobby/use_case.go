@@ -73,6 +73,11 @@ func (useCase UseCase) QueuePlayer(playerId string) error {
 	return err
 }
 
+func (useCase UseCase) TouchQueue(playerId string) error {
+	err := useCase.Repo.TouchQueue(playerId)
+	return err
+}
+
 func (useCase UseCase) UnqueuePlayer(playerId string) error {
 	err := useCase.Repo.UnqueuePlayer(playerId)
 	return err

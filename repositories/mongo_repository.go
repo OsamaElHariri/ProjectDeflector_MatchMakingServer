@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math/rand"
 	"strconv"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -29,7 +30,11 @@ func (repo MongoRepository) QueuePlayer(playerId string) error {
 	}
 
 	update := bson.D{
-		{Key: "$set", Value: filter},
+		{Key: "$set", Value: bson.D{
+			{Key: "player_id", Value: playerId},
+			{Key: "match_making_group", Value: ""},
+			{Key: "last_activity_on", Value: time.Now().Unix()},
+		}},
 	}
 
 	t := true
@@ -37,6 +42,24 @@ func (repo MongoRepository) QueuePlayer(playerId string) error {
 		Upsert: &t,
 	}
 	_, err := repo.client.Database("match_management").Collection("players").UpdateOne(repo.ctx, filter, update, &opt)
+
+	return err
+}
+
+func (repo MongoRepository) TouchQueue(playerId string) error {
+
+	filter := bson.D{
+		{Key: "player_id", Value: playerId},
+		{Key: "match_making_group", Value: ""},
+	}
+
+	update := bson.D{
+		{Key: "$set", Value: bson.D{
+			{Key: "last_activity_on", Value: time.Now().Unix()},
+		}},
+	}
+
+	_, err := repo.client.Database("match_management").Collection("players").UpdateOne(repo.ctx, filter, update)
 
 	return err
 }
@@ -80,6 +103,9 @@ func (repo MongoRepository) SetRandomMatchMakingGroup() (string, error) {
 
 	filter := bson.D{
 		{Key: "match_making_group", Value: ""},
+		{Key: "last_activity_on", Value: bson.D{
+			{Key: "$gte", Value: time.Now().Unix() - 60},
+		}},
 	}
 
 	update := bson.D{

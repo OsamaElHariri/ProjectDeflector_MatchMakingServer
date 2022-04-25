@@ -86,6 +86,24 @@ func main() {
 		})
 	})
 
+	app.Post("/touch", func(c *fiber.Ctx) error {
+		playerId := c.Locals("userId").(string)
+
+		repo := c.Locals("repo").(repositories.Repository)
+		useCase := game_lobby.UseCase{
+			Repo: repo,
+		}
+
+		err := useCase.TouchQueue(playerId)
+		if err != nil {
+			return c.SendStatus(400)
+		}
+
+		return c.JSON(fiber.Map{
+			"status": "ok",
+		})
+	})
+
 	app.Post("/cancel", func(c *fiber.Ctx) error {
 		playerId := c.Locals("userId").(string)
 
